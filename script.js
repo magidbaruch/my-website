@@ -69,21 +69,47 @@ function setupPhoneNumberLookup() {
 }
 
 /**
- * Lookup contact in SAP Service Cloud v2 (CORS Safe)
+ * Lookup contact in SAP Service Cloud v2 (Enhanced for customer recognition)
  * @param {string} phoneNumber - Phone number to lookup
  */
 function lookupContactInSAP(phoneNumber) {
     console.log("Looking up contact for phone:", phoneNumber);
     
-    const lookupMessage = {
-        type: 'CTI_LOOKUP',
-        action: 'SEARCH_CONTACT',
-        ani: phoneNumber,
-        provider: 'ZBM_TEST',
-        timestamp: new Date().toISOString()
-    };
+    // Clean phone number (remove spaces, format consistently)
+    const cleanPhone = phoneNumber.replace(/\s/g, '');
     
-    sendToParent(lookupMessage);
+    // Send multiple lookup message formats to ensure SAP recognizes it
+    const lookupMessages = [
+        // Standard CTI lookup
+        {
+            type: 'CTI_LOOKUP',
+            action: 'SEARCH_CONTACT',
+            ani: cleanPhone,
+            provider: 'ZBM_TEST',
+            timestamp: new Date().toISOString()
+        },
+        // SAP Service Cloud specific lookup
+        {
+            type: 'INBOUND_CALL',
+            eventType: 'NOTIFY',
+            ani: cleanPhone,
+            provider: 'ZBM_TEST'
+        },
+        // Customer search by phone
+        {
+            type: 'CUSTOMER_LOOKUP',
+            phoneNumber: cleanPhone,
+            searchType: 'ANI'
+        }
+    ];
+    
+    // Send all lookup formats
+    lookupMessages.forEach((message, index) => {
+        setTimeout(() => {
+            sendToParent(message);
+            console.log(`Lookup message ${index + 1} sent:`, message);
+        }, index * 200); // Small delay between messages
+    });
 }
 
 /**
@@ -172,12 +198,38 @@ function constructSAPPayload(parameters) {
 }
 
 /**
- * Send payload to SAP Service Cloud v2 (CORS Safe)
+ * Send payload to SAP Service Cloud v2 (Enhanced with customer lookup)
  * @param {Object} parameters - Form parameters
  */
 function sendToSAPServiceCloud(parameters) {
     console.log("Sending payload to SAP Service Cloud v2:", parameters);
     
+    try {
+        // First, trigger customer lookup if ANI is provided
+        if (parameters.ANI && parameters.ANI.trim()) {
+            console.log("Triggering customer lookup before sending payload...");
+            lookupContactInSAP(parameters.ANI);
+            
+            // Wait a moment for lookup, then send the main payload
+            setTimeout(() => {
+                sendMainPayload(parameters);
+            }, 1000);
+        } else {
+            // No ANI, send payload immediately
+            sendMainPayload(parameters);
+        }
+        
+    } catch (error) {
+        console.error("Error in payload process:", error);
+        showErrorMessage("Error: " + error.message);
+    }
+}
+
+/**
+ * Send the main CTI payload
+ * @param {Object} parameters - Form parameters
+ */
+function sendMainPayload(parameters) {
     try {
         var payload = constructSAPPayload(parameters);
         
@@ -206,7 +258,7 @@ function sendToSAPServiceCloud(parameters) {
         }, 500);
         
     } catch (error) {
-        console.error("Error sending to SAP Service Cloud:", error);
+        console.error("Error sending main payload:", error);
         showErrorMessage("Error: " + error.message);
     }
 }
@@ -270,6 +322,30 @@ function handleSendCall(event) {
     
     console.log("Parameters:", parameters);
     sendToSAPServiceCloud(parameters);
+}
+
+/**
+ * Manual customer lookup triggered by button
+ */
+function manualLookup() {
+    const phoneNumber = document.getElementById("ani").value.trim();
+    if (phoneNumber) {
+        console.log("Manual lookup triggered for:", phoneNumber);
+        lookupContactInSAP(phoneNumber);
+        
+        // Visual feedback
+        const button = event.target;
+        const originalText = button.innerText;
+        button.innerText = "Looking up...";
+        button.disabled = true;
+        
+        setTimeout(() => {
+            button.innerText = originalText;
+            button.disabled = false;
+        }, 3000);
+    } else {
+        alert("Please enter a phone number first");
+    }
 }
 
 /**
