@@ -1,331 +1,151 @@
-// SAP Service Cloud v2 CTI Integration - CORS Safe Version
-console.log("SAP Service Cloud v2 CTI Widget Loading (CORS Safe)...");
+// SAP Service Cloud v2 CTI Integration - Based on Official SAP Documentation
+console.log("SAP Service Cloud v2 CTI Widget Loading (Official Pattern)...");
+
+// Define the global object for Service Cloud v2 CTI integration (adapted from C4C)
+var servicecloud = servicecloud || {};
+servicecloud.cti = servicecloud.cti || {};
+servicecloud.cti.integration = function () { };
 
 /**
- * Initialize SAP Service Cloud v2 Integration (CORS Safe)
+ * Construct the payload in XML format (Official SAP Method - Adapted for Service Cloud v2)
+ * @param {Object} parameters - Key-value pairs for the payload
+ * @returns {string} payload in xml format
+ * @private
  */
-function initializeSAPIntegration() {
-    console.log("Initializing CORS-safe SAP Service Cloud v2 integration...");
+servicecloud.cti.integration.prototype._formXMLPayload = function(parameters){
+    var sPayload = "<?xml version='1.0' encoding='utf-8' ?><payload>";
+    for(var key in parameters){
+        if(parameters[key] && parameters[key].toString().trim() !== ""){
+            var tag = "<" + key + ">" + parameters[key] + "</" + key + ">";
+            sPayload = sPayload + tag;
+        }
+    }
+    sPayload = sPayload + "</payload>";
+    console.log("Official SAP payload constructed:", sPayload);
+    return sPayload;
+};
+
+/**
+ * Send information to Service Cloud v2 (Adapted from C4C method)
+ * @param {Object} parameters - Form parameters
+ */
+servicecloud.cti.integration.prototype.sendIncomingCalltoServiceCloud = function (parameters) {
+    console.log("Sending to Service Cloud v2 using official SAP method:", parameters);
+    var payload = this._formXMLPayload(parameters);
+    this._doCall(payload);
+};
+
+/**
+ * Post to parent window (Official SAP Method)
+ * @param {string} sPayload - XML payload to send
+ * @private
+ */
+servicecloud.cti.integration.prototype._doCall = function (sPayload) {
+    console.log("Official SAP _doCall method - sending to parent:", sPayload);
+    try {
+        window.parent.postMessage(sPayload, "*");
+        console.log("Message sent successfully via official SAP method");
+    } catch (error) {
+        console.error("Error in official SAP _doCall method:", error);
+    }
+};
+
+/**
+ * Initialize Service Cloud v2 Integration
+ */
+function initializeServiceCloudIntegration() {
+    console.log("Initializing Service Cloud v2 integration (official SAP pattern)...");
     
-    // Check if we're in an iframe (embedded in SAP)
     if (window.parent && window.parent !== window) {
-        console.log("Running in iframe - SAP Service Cloud v2 environment detected");
+        console.log("Running in Service Cloud v2 environment");
         setupPhoneNumberLookup();
-        setupSAPEventListeners();
-        
-        // Send initialization message to parent
-        sendToParent({
-            type: 'CTI_WIDGET_READY',
-            provider: 'ZBM_TEST',
-            timestamp: new Date().toISOString()
-        });
+        setupServiceCloudEventListeners();
     } else {
         console.log("Standalone mode - no parent window");
     }
 }
 
 /**
- * CORS-safe method to send messages to parent window
- * @param {Object} message - Message to send
- */
-function sendToParent(message) {
-    try {
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage(message, '*');
-            console.log("Message sent to parent:", message);
-        } else {
-            console.log("No parent window available");
-        }
-    } catch (error) {
-        console.error("Error sending message to parent:", error);
-    }
-}
-
-/**
- * Setup phone number lookup (Only for customer search, not widget trigger)
+ * Setup phone number lookup for customer search
  */
 function setupPhoneNumberLookup() {
     const aniField = document.getElementById("ani");
     if (aniField) {
-        console.log("Setting up ANI field listener for customer search only");
+        console.log("Setting up ANI field for customer lookup");
         
-        // Listen for phone number changes - ONLY for customer search
-        aniField.addEventListener('input', function() {
-            const phoneNumber = this.value.trim();
-            if (phoneNumber && phoneNumber.length >= 10) {
-                console.log("Phone number entered - customer search only:", phoneNumber);
-                
-                // Clear any existing timeout
-                if (window.lookupTimeout) {
-                    clearTimeout(window.lookupTimeout);
-                }
-                
-                // Set a delay and do ONLY customer search (no widget trigger)
-                window.lookupTimeout = setTimeout(() => {
-                    lookupContactInSAP(phoneNumber);
-                }, 1000);
-            }
-        });
-        
-        // Blur event - customer search only
         aniField.addEventListener('blur', function() {
             const phoneNumber = this.value.trim();
             if (phoneNumber && phoneNumber.length >= 7) {
-                console.log("ANI field blur - customer search only:", phoneNumber);
-                lookupContactInSAP(phoneNumber);
+                console.log("ANI field blur - looking up customer:", phoneNumber);
+                lookupCustomer(phoneNumber);
             }
         });
     }
 }
 
 /**
- * Lookup contact in SAP Service Cloud v2 (Customer search only - NO widget trigger)
+ * Lookup customer using Service Cloud v2 pattern
  * @param {string} phoneNumber - Phone number to lookup
  */
-function lookupContactInSAP(phoneNumber) {
-    console.log("Looking up customer (no widget trigger):", phoneNumber);
+function lookupCustomer(phoneNumber) {
+    console.log("Looking up customer in Service Cloud v2:", phoneNumber);
     
-    // Clean phone number (remove spaces, format consistently)
     const cleanPhone = phoneNumber.replace(/\s/g, '');
     
-    // Send ONLY customer search messages - NOT CTI events that trigger the widget
-    const customerSearchMessages = [
-        // Customer search message
-        {
-            type: 'CUSTOMER_SEARCH',
-            phoneNumber: cleanPhone,
-            ani: cleanPhone,
-            provider: 'ZBM_TEST',
-            searchOnly: true
-        },
-        // ANI lookup message
-        {
-            type: 'ANI_LOOKUP',
-            ani: cleanPhone,
-            action: 'SEARCH_ONLY',
-            provider: 'ZBM_TEST'
-        },
-        // Contact search by phone
-        {
-            type: 'CONTACT_SEARCH',
-            phoneNumber: cleanPhone,
-            searchType: 'PHONE',
-            provider: 'ZBM_TEST'
-        }
-    ];
+    // Create integration instance
+    var integration = new servicecloud.cti.integration();
     
-    // Send customer search messages (NOT CTI events)
-    customerSearchMessages.forEach((message, index) => {
-        setTimeout(() => {
-            sendToParent(message);
-            console.log(`Customer search message ${index + 1} sent:`, message);
-        }, index * 300);
-    });
+    // Send lookup call using official SAP pattern
+    const lookupParameters = {
+        Type: 'CALL',
+        EventType: 'INBOUND',
+        Action: 'NOTIFY',
+        ANI: cleanPhone
+    };
     
-    console.log("Customer search initiated - no widget trigger");
+    console.log("Sending customer lookup with official SAP method");
+    integration.sendIncomingCalltoServiceCloud(lookupParameters);
 }
 
 /**
- * Setup event listeners for SAP Service Cloud responses
+ * Setup event listeners for Service Cloud responses
  */
-function setupSAPEventListeners() {
+function setupServiceCloudEventListeners() {
     window.addEventListener('message', function(event) {
-        console.log("Received message from parent:", event.data);
+        console.log("Received message from Service Cloud parent:", event.data);
         
-        if (event.data && event.data.type) {
-            switch (event.data.type) {
-                case 'CTI_CONTACT_FOUND':
-                    console.log("Contact found:", event.data);
-                    populateContactData(event.data.contact);
-                    break;
-                case 'CTI_CONTACT_NOT_FOUND':
-                    console.log("Contact not found for ANI");
-                    break;
-                case 'CTI_ERROR':
-                    console.error("CTI Error:", event.data.error);
-                    break;
-                case 'CTI_ACKNOWLEDGMENT':
-                    console.log("SAP acknowledged message:", event.data);
-                    break;
-                default:
-                    console.log("Unknown message type:", event.data.type);
+        // Handle responses from Service Cloud
+        if (event.data && typeof event.data === 'object') {
+            if (event.data.type === 'CUSTOMER_FOUND') {
+                console.log("Customer found:", event.data);
+                populateCustomerData(event.data.customer);
             }
         }
     });
 }
 
 /**
- * Populate form with contact data from SAP
- * @param {Object} contact - Contact information
+ * Populate form with customer data
+ * @param {Object} customer - Customer information
  */
-function populateContactData(contact) {
-    console.log("Populating contact data:", contact);
+function populateCustomerData(customer) {
+    console.log("Populating customer data:", customer);
     
-    if (contact.email) {
-        document.getElementById("email").value = contact.email;
+    if (customer.email) {
+        document.getElementById("email").value = customer.email;
     }
-    if (contact.name) {
-        document.getElementById("subject").value = "Call with " + contact.name;
-    }
-    if (contact.account) {
-        document.getElementById("text").value = "Account: " + contact.account;
+    if (customer.name) {
+        document.getElementById("subject").value = "Call with " + customer.name;
     }
 }
 
 /**
- * Constructs XML payload EXACTLY like the demo (NO Provider, NO Timestamp)
- * @param {Object} parameters - Form parameters
- * @returns {string} - XML payload
- */
-function constructSAPPayload(parameters) {
-    var sPayload = "<?xml version=\"1.0\" encoding=\"utf-8\"?><payload>";
-    
-    // DEMO STYLE - NO Provider, NO Timestamp tags!
-    
-    Object.entries(parameters).forEach(([key, value]) => {
-        if (key === "Action" && value === "ACCEPT") {
-            value = ""; // Leave Action empty for ACCEPT
-        }
-        if (value && value.trim() !== "") {
-            // Clean the value - remove extra spaces
-            var cleanValue = value.trim();
-            
-            // For ANI field, ensure no spaces in phone numbers
-            if (key === "ANI") {
-                cleanValue = cleanValue.replace(/\s/g, '');
-            }
-            
-            // Simple XML escaping (minimal, like demo)
-            cleanValue = cleanValue
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-                
-            sPayload += `<${key}>${cleanValue}</${key}>`;
-        }
-    });
-    
-    sPayload += "</payload>";
-    console.log("DEMO-STYLE payload (no Provider/Timestamp):", sPayload);
-    return sPayload;
-}
-
-/**
- * Send payload to SAP Service Cloud v2 (No automatic lookup)
- * @param {Object} parameters - Form parameters
- */
-function sendToSAPServiceCloud(parameters) {
-    console.log("Sending payload to SAP Service Cloud v2:", parameters);
-    
-    try {
-        var payload = constructSAPPayload(parameters);
-        
-        // Display the payload
-        displayPayloadMessage(payload);
-        
-        // SAP Service Cloud v2 specific message (CORS Safe)
-        const sapMessage = {
-            type: 'CTI_EVENT',
-            action: parameters.Action,
-            eventType: parameters.EventType,
-            provider: 'ZBM_TEST',
-            payload: payload,
-            parameters: parameters,
-            timestamp: new Date().toISOString(),
-            widgetSource: 'https://magidbaruch.github.io/my-website/'
-        };
-        
-        // Send using CORS-safe PostMessage
-        sendToParent(sapMessage);
-        
-        // Show success message
-        setTimeout(() => {
-            console.log("Payload successfully sent to SAP Service Cloud v2");
-            showSuccessMessage("Payload sent to SAP Service Cloud v2!");
-        }, 500);
-        
-    } catch (error) {
-        console.error("Error sending to SAP Service Cloud:", error);
-        showErrorMessage("Error: " + error.message);
-    }
-}
-
-/**
- * Send the main CTI payload
- * @param {Object} parameters - Form parameters
- */
-function sendMainPayload(parameters) {
-    try {
-        var payload = constructSAPPayload(parameters);
-        
-        // Display the payload
-        displayPayloadMessage(payload);
-        
-        // SAP Service Cloud v2 specific message (CORS Safe)
-        const sapMessage = {
-            type: 'CTI_EVENT',
-            action: parameters.Action,
-            eventType: parameters.EventType,
-            provider: 'ZBM_TEST',
-            payload: payload,
-            parameters: parameters,
-            timestamp: new Date().toISOString(),
-            widgetSource: 'https://magidbaruch.github.io/my-website/'
-        };
-        
-        // Send using CORS-safe PostMessage
-        sendToParent(sapMessage);
-        
-        // Show success message
-        setTimeout(() => {
-            console.log("Payload successfully sent to SAP Service Cloud v2");
-            showSuccessMessage("Payload sent to SAP Service Cloud v2!");
-        }, 500);
-        
-    } catch (error) {
-        console.error("Error sending main payload:", error);
-        showErrorMessage("Error: " + error.message);
-    }
-}
-
-/**
- * Show success message in the UI
- * @param {string} message - Success message
- */
-function showSuccessMessage(message) {
-    const payloadDiv = document.getElementById("payloadMessage");
-    const originalContent = payloadDiv.innerText;
-    
-    payloadDiv.style.backgroundColor = "#d4edda";
-    payloadDiv.style.color = "#155724";
-    payloadDiv.innerText = message;
-    
-    // Restore original content after 3 seconds
-    setTimeout(() => {
-        payloadDiv.style.backgroundColor = "#e8e8e8";
-        payloadDiv.style.color = "#333";
-        payloadDiv.innerText = originalContent;
-    }, 3000);
-}
-
-/**
- * Show error message in the UI
- * @param {string} message - Error message
- */
-function showErrorMessage(message) {
-    const payloadDiv = document.getElementById("payloadMessage");
-    payloadDiv.style.backgroundColor = "#f8d7da";
-    payloadDiv.style.color = "#721c24";
-    payloadDiv.innerText = message;
-}
-
-/**
- * Handle form submission
+ * Handle form submission using official SAP method
  * @param {Event} event - Form submission event
  */
 function handleSendCall(event) {
     event.preventDefault();
-    console.log("Form submitted");
+    console.log("Form submitted - using official SAP integration method");
     
     var parameters = {
         Type: document.getElementById("type").value,
@@ -345,8 +165,20 @@ function handleSendCall(event) {
         CustomField4: document.getElementById("customField4").value || ""
     };
     
-    console.log("Parameters:", parameters);
-    sendToSAPServiceCloud(parameters);
+    console.log("Parameters for official SAP method:", parameters);
+    
+    // Use official SAP integration method
+    var integration = new servicecloud.cti.integration();
+    integration.sendIncomingCalltoServiceCloud(parameters);
+    
+    // Display payload for debugging
+    var payload = integration._formXMLPayload(parameters);
+    displayPayloadMessage(payload);
+    
+    // Show success message
+    setTimeout(() => {
+        showSuccessMessage("Payload sent using official SAP method!");
+    }, 500);
 }
 
 /**
@@ -355,8 +187,8 @@ function handleSendCall(event) {
 function manualLookup() {
     const phoneNumber = document.getElementById("ani").value.trim();
     if (phoneNumber) {
-        console.log("Manual lookup triggered for:", phoneNumber);
-        lookupContactInSAP(phoneNumber);
+        console.log("Manual lookup triggered with official SAP method:", phoneNumber);
+        lookupCustomer(phoneNumber);
         
         // Visual feedback
         const button = event.target;
@@ -402,11 +234,30 @@ function displayPayloadMessage(payload) {
     payloadDiv.style.display = "block";
 }
 
+/**
+ * Show success message in the UI
+ * @param {string} message - Success message
+ */
+function showSuccessMessage(message) {
+    const payloadDiv = document.getElementById("payloadMessage");
+    const originalContent = payloadDiv.innerText;
+    
+    payloadDiv.style.backgroundColor = "#d4edda";
+    payloadDiv.style.color = "#155724";
+    payloadDiv.innerText = message;
+    
+    // Restore original content after 3 seconds
+    setTimeout(() => {
+        payloadDiv.style.backgroundColor = "#e8e8e8";
+        payloadDiv.style.color = "#333";
+        payloadDiv.innerText = originalContent;
+    }, 3000);
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM loaded - initializing CORS-safe SAP integration");
-    initializeSAPIntegration();
+    console.log("DOM loaded - initializing official SAP Service Cloud v2 integration");
+    initializeServiceCloudIntegration();
 });
 
-// Prevent CORS errors by avoiding direct parent window property access
-console.log("CORS-safe widget loaded successfully");
+console.log("Official SAP Service Cloud v2 CTI integration loaded successfully");
