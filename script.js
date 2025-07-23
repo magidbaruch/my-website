@@ -42,95 +42,87 @@ function sendToParent(message) {
 }
 
 /**
- * Setup phone number lookup
+ * Setup phone number lookup (Only for customer search, not widget trigger)
  */
 function setupPhoneNumberLookup() {
     const aniField = document.getElementById("ani");
     if (aniField) {
-        console.log("Setting up ANI field listener");
+        console.log("Setting up ANI field listener for customer search only");
         
-        // Listen for phone number changes with immediate lookup
+        // Listen for phone number changes - ONLY for customer search
         aniField.addEventListener('input', function() {
             const phoneNumber = this.value.trim();
             if (phoneNumber && phoneNumber.length >= 10) {
-                console.log("Phone number entered (10+ digits):", phoneNumber);
+                console.log("Phone number entered - customer search only:", phoneNumber);
                 
                 // Clear any existing timeout
                 if (window.lookupTimeout) {
                     clearTimeout(window.lookupTimeout);
                 }
                 
-                // Set a short delay to avoid too many lookups while typing
+                // Set a delay and do ONLY customer search (no widget trigger)
                 window.lookupTimeout = setTimeout(() => {
                     lookupContactInSAP(phoneNumber);
-                }, 800);
+                }, 1000);
             }
         });
         
-        // Also trigger on blur (when user clicks away)
+        // Blur event - customer search only
         aniField.addEventListener('blur', function() {
             const phoneNumber = this.value.trim();
             if (phoneNumber && phoneNumber.length >= 7) {
-                console.log("ANI field blur - triggering lookup:", phoneNumber);
+                console.log("ANI field blur - customer search only:", phoneNumber);
                 lookupContactInSAP(phoneNumber);
-            }
-        });
-        
-        // Trigger lookup when Enter key is pressed
-        aniField.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                const phoneNumber = this.value.trim();
-                if (phoneNumber && phoneNumber.length >= 7) {
-                    console.log("Enter key pressed - triggering lookup:", phoneNumber);
-                    lookupContactInSAP(phoneNumber);
-                }
             }
         });
     }
 }
 
 /**
- * Lookup contact in SAP Service Cloud v2 (Enhanced for customer recognition)
+ * Lookup contact in SAP Service Cloud v2 (Customer search only - NO widget trigger)
  * @param {string} phoneNumber - Phone number to lookup
  */
 function lookupContactInSAP(phoneNumber) {
-    console.log("Looking up contact for phone:", phoneNumber);
+    console.log("Looking up customer (no widget trigger):", phoneNumber);
     
     // Clean phone number (remove spaces, format consistently)
     const cleanPhone = phoneNumber.replace(/\s/g, '');
     
-    // SAP Service Cloud v2 expects a specific inbound call notification format
-    const inboundCallMessage = {
-        type: 'CTI_EVENT',
-        action: 'NOTIFY',
-        eventType: 'INBOUND',
-        provider: 'ZBM_TEST',
-        ani: cleanPhone,
-        parameters: {
-            Type: 'CALL',
-            EventType: 'INBOUND',
-            Action: 'NOTIFY',
-            ANI: cleanPhone
-        },
-        payload: `<?xml version="1.0" encoding="utf-8"?><payload><Type>CALL</Type><EventType>INBOUND</EventType><Action>NOTIFY</Action><ANI>${cleanPhone}</ANI></payload>`,
-        timestamp: new Date().toISOString(),
-        widgetSource: 'https://magidbaruch.github.io/my-website/'
-    };
-    
-    console.log("Sending inbound call notification for customer lookup:", inboundCallMessage);
-    sendToParent(inboundCallMessage);
-    
-    // Also send a simplified lookup message as backup
-    setTimeout(() => {
-        const simpleMessage = {
-            type: 'PHONE_EVENT',
+    // Send ONLY customer search messages - NOT CTI events that trigger the widget
+    const customerSearchMessages = [
+        // Customer search message
+        {
+            type: 'CUSTOMER_SEARCH',
+            phoneNumber: cleanPhone,
             ani: cleanPhone,
-            eventType: 'INBOUND',
+            provider: 'ZBM_TEST',
+            searchOnly: true
+        },
+        // ANI lookup message
+        {
+            type: 'ANI_LOOKUP',
+            ani: cleanPhone,
+            action: 'SEARCH_ONLY',
             provider: 'ZBM_TEST'
-        };
-        console.log("Sending backup lookup message:", simpleMessage);
-        sendToParent(simpleMessage);
-    }, 500);
+        },
+        // Contact search by phone
+        {
+            type: 'CONTACT_SEARCH',
+            phoneNumber: cleanPhone,
+            searchType: 'PHONE',
+            provider: 'ZBM_TEST'
+        }
+    ];
+    
+    // Send customer search messages (NOT CTI events)
+    customerSearchMessages.forEach((message, index) => {
+        setTimeout(() => {
+            sendToParent(message);
+            console.log(`Customer search message ${index + 1} sent:`, message);
+        }, index * 300);
+    });
+    
+    console.log("Customer search initiated - no widget trigger");
 }
 
 /**
@@ -219,29 +211,41 @@ function constructSAPPayload(parameters) {
 }
 
 /**
- * Send payload to SAP Service Cloud v2 (Enhanced with customer lookup)
+ * Send payload to SAP Service Cloud v2 (No automatic lookup)
  * @param {Object} parameters - Form parameters
  */
 function sendToSAPServiceCloud(parameters) {
     console.log("Sending payload to SAP Service Cloud v2:", parameters);
     
     try {
-        // First, trigger customer lookup if ANI is provided
-        if (parameters.ANI && parameters.ANI.trim()) {
-            console.log("Triggering customer lookup before sending payload...");
-            lookupContactInSAP(parameters.ANI);
-            
-            // Wait a moment for lookup, then send the main payload
-            setTimeout(() => {
-                sendMainPayload(parameters);
-            }, 1000);
-        } else {
-            // No ANI, send payload immediately
-            sendMainPayload(parameters);
-        }
+        var payload = constructSAPPayload(parameters);
+        
+        // Display the payload
+        displayPayloadMessage(payload);
+        
+        // SAP Service Cloud v2 specific message (CORS Safe)
+        const sapMessage = {
+            type: 'CTI_EVENT',
+            action: parameters.Action,
+            eventType: parameters.EventType,
+            provider: 'ZBM_TEST',
+            payload: payload,
+            parameters: parameters,
+            timestamp: new Date().toISOString(),
+            widgetSource: 'https://magidbaruch.github.io/my-website/'
+        };
+        
+        // Send using CORS-safe PostMessage
+        sendToParent(sapMessage);
+        
+        // Show success message
+        setTimeout(() => {
+            console.log("Payload successfully sent to SAP Service Cloud v2");
+            showSuccessMessage("Payload sent to SAP Service Cloud v2!");
+        }, 500);
         
     } catch (error) {
-        console.error("Error in payload process:", error);
+        console.error("Error sending to SAP Service Cloud:", error);
         showErrorMessage("Error: " + error.message);
     }
 }
