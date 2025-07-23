@@ -50,10 +50,13 @@
                 </select>
             </td>
         </tr>
-        <!-- Phone number field -->
+         <!-- Phone number field with lookup button -->
         <tr>
             <td><label for="ani">ANI (Phone Number):</label></td>
-            <td><input id="ani" name="ani" type="text" placeholder="+1234567890" value="+14165551234"></td>
+            <td>
+                <input id="ani" name="ani" type="text" placeholder="+1234567890" value="+14165551234">
+                <button type="button" onclick="manualLookup()" style="margin-left: 5px;">Lookup Customer</button>
+            </td>
         </tr>
         <!-- Email field -->
         <tr>
