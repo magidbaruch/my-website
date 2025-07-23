@@ -134,44 +134,40 @@ function populateContactData(contact) {
 }
 
 /**
- * Constructs XML payload for SAP Service Cloud v2
+ * Constructs XML payload exactly like the demo
  * @param {Object} parameters - Form parameters
  * @returns {string} - XML payload
  */
 function constructSAPPayload(parameters) {
     var sPayload = "<?xml version=\"1.0\" encoding=\"utf-8\"?><payload>";
     
-    // Add provider information
-    sPayload += "<Provider>ZBM_TEST</Provider>";
-    sPayload += "<Timestamp>" + new Date().toISOString() + "</Timestamp>";
+    // NO Provider or Timestamp - just like the demo!
     
     Object.entries(parameters).forEach(([key, value]) => {
         if (key === "Action" && value === "ACCEPT") {
             value = ""; // Leave Action empty for ACCEPT
         }
         if (value && value.trim() !== "") {
-            // Clean the value - remove extra spaces and don't URL encode
-            var cleanValue = value.trim().replace(/\s+/g, '');
+            // Clean the value - remove extra spaces
+            var cleanValue = value.trim();
             
             // For ANI field, ensure no spaces in phone numbers
             if (key === "ANI") {
                 cleanValue = cleanValue.replace(/\s/g, '');
             }
             
-            // Escape only dangerous XML characters, not URL encode
+            // Simple XML escaping (minimal, like demo)
             cleanValue = cleanValue
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
+                .replace(/>/g, '&gt;');
                 
             sPayload += `<${key}>${cleanValue}</${key}>`;
         }
     });
     
     sPayload += "</payload>";
-    console.log("SAP Payload constructed:", sPayload);
+    console.log("Demo-style payload constructed:", sPayload);
     return sPayload;
 }
 
