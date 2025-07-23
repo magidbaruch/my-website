@@ -150,7 +150,23 @@ function constructSAPPayload(parameters) {
             value = ""; // Leave Action empty for ACCEPT
         }
         if (value && value.trim() !== "") {
-            sPayload += `<${key}>${escape(value)}</${key}>`;
+            // Clean the value - remove extra spaces and don't URL encode
+            var cleanValue = value.trim().replace(/\s+/g, '');
+            
+            // For ANI field, ensure no spaces in phone numbers
+            if (key === "ANI") {
+                cleanValue = cleanValue.replace(/\s/g, '');
+            }
+            
+            // Escape only dangerous XML characters, not URL encode
+            cleanValue = cleanValue
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+                
+            sPayload += `<${key}>${cleanValue}</${key}>`;
         }
     });
     
