@@ -134,14 +134,14 @@ function populateContactData(contact) {
 }
 
 /**
- * Constructs XML payload exactly like the demo
+ * Constructs XML payload EXACTLY like the demo (NO Provider, NO Timestamp)
  * @param {Object} parameters - Form parameters
  * @returns {string} - XML payload
  */
 function constructSAPPayload(parameters) {
     var sPayload = "<?xml version=\"1.0\" encoding=\"utf-8\"?><payload>";
     
-    // NO Provider or Timestamp - just like the demo!
+    // DEMO STYLE - NO Provider, NO Timestamp tags!
     
     Object.entries(parameters).forEach(([key, value]) => {
         if (key === "Action" && value === "ACCEPT") {
@@ -167,7 +167,7 @@ function constructSAPPayload(parameters) {
     });
     
     sPayload += "</payload>";
-    console.log("Demo-style payload constructed:", sPayload);
+    console.log("DEMO-STYLE payload (no Provider/Timestamp):", sPayload);
     return sPayload;
 }
 
