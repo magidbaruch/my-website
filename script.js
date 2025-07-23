@@ -6,8 +6,15 @@ var servicecloud = servicecloud || {};
 servicecloud.cti = servicecloud.cti || {};
 servicecloud.cti.integration = function () { };
 
+// Track interaction state to handle multiple lookups
+var interactionState = {
+    currentANI: null,
+    isActive: false,
+    lastLookupTime: 0
+};
+
 /**
- * Construct the payload in XML format (Official SAP Method - Adapted for Service Cloud v2)
+ * Construct the payload in XML format (Official SAP Method - Service Cloud v2 requires XML)
  * @param {Object} parameters - Key-value pairs for the payload
  * @returns {string} payload in xml format
  * @private
@@ -21,30 +28,69 @@ servicecloud.cti.integration.prototype._formXMLPayload = function(parameters){
         }
     }
     sPayload = sPayload + "</payload>";
-    console.log("Official SAP payload constructed:", sPayload);
+    console.log("Official SAP XML payload constructed:", sPayload);
     return sPayload;
 };
 
 /**
- * Send information to Service Cloud v2 (Adapted from C4C method)
+ * Send information to Service Cloud v2 (XML Format - Required by SAP)
  * @param {Object} parameters - Form parameters
  */
 servicecloud.cti.integration.prototype.sendIncomingCalltoServiceCloud = function (parameters) {
-    console.log("Sending to Service Cloud v2 using official SAP method:", parameters);
+    console.log("Sending to Service Cloud v2 using XML format:", parameters);
+    
+    // End previous interaction if exists
+    if (interactionState.isActive && interactionState.currentANI !== parameters.ANI) {
+        console.log("Ending previous interaction for ANI:", interactionState.currentANI);
+        this.endPreviousInteraction();
+    }
+    
     var payload = this._formXMLPayload(parameters);
     this._doCall(payload);
+    
+    // Update interaction state
+    interactionState.currentANI = parameters.ANI;
+    interactionState.isActive = true;
+    interactionState.lastLookupTime = Date.now();
 };
 
 /**
- * Post to parent window (Official SAP Method)
+ * End previous interaction before starting a new one
+ */
+servicecloud.cti.integration.prototype.endPreviousInteraction = function() {
+    console.log("Ending previous interaction");
+    
+    const endParameters = {
+        Type: 'CALL',
+        EventType: 'INBOUND',
+        Action: 'END',
+        ANI: interactionState.currentANI || ''
+    };
+    
+    const endPayload = this._formXMLPayload(endParameters);
+    
+    try {
+        window.parent.postMessage(endPayload, "*");
+        console.log("Previous interaction ended");
+    } catch (error) {
+        console.error("Error ending previous interaction:", error);
+    }
+    
+    // Reset state
+    interactionState.isActive = false;
+    interactionState.currentANI = null;
+};
+
+/**
+ * Post to parent window (XML Format - Official SAP Method)
  * @param {string} sPayload - XML payload to send
  * @private
  */
 servicecloud.cti.integration.prototype._doCall = function (sPayload) {
-    console.log("Official SAP _doCall method - sending to parent:", sPayload);
+    console.log("Official SAP _doCall method - sending XML to parent:", sPayload);
     try {
         window.parent.postMessage(sPayload, "*");
-        console.log("Message sent successfully via official SAP method");
+        console.log("XML message sent successfully via official SAP method");
     } catch (error) {
         console.error("Error in official SAP _doCall method:", error);
     }
@@ -84,13 +130,20 @@ function setupPhoneNumberLookup() {
 }
 
 /**
- * Lookup customer using Service Cloud v2 pattern
+ * Lookup customer using Service Cloud v2 pattern (with state checking)
  * @param {string} phoneNumber - Phone number to lookup
  */
 function lookupCustomer(phoneNumber) {
     console.log("Looking up customer in Service Cloud v2:", phoneNumber);
     
     const cleanPhone = phoneNumber.replace(/\s/g, '');
+    const now = Date.now();
+    
+    // Prevent duplicate lookups within 2 seconds
+    if (interactionState.currentANI === cleanPhone && (now - interactionState.lastLookupTime) < 2000) {
+        console.log("Skipping duplicate lookup for same ANI");
+        return;
+    }
     
     // Create integration instance
     var integration = new servicecloud.cti.integration();
@@ -167,17 +220,17 @@ function handleSendCall(event) {
     
     console.log("Parameters for official SAP method:", parameters);
     
-    // Use official SAP integration method
+    // Use official SAP integration method (XML format required)
     var integration = new servicecloud.cti.integration();
     integration.sendIncomingCalltoServiceCloud(parameters);
     
-    // Display payload for debugging
+    // Display payload for debugging (XML format)
     var payload = integration._formXMLPayload(parameters);
     displayPayloadMessage(payload);
     
     // Show success message
     setTimeout(() => {
-        showSuccessMessage("Payload sent using official SAP method!");
+        showSuccessMessage("XML payload sent using official SAP method!");
     }, 500);
 }
 
@@ -216,12 +269,43 @@ function generateRandomGUID(fieldId) {
 }
 
 /**
- * Reset form
+ * Clear current interaction manually
+ */
+function clearInteraction() {
+    console.log("Manually clearing interaction");
+    
+    if (interactionState.isActive && interactionState.currentANI) {
+        var integration = new servicecloud.cti.integration();
+        integration.endPreviousInteraction();
+        
+        showSuccessMessage("Interaction cleared - ready for new phone number!");
+    } else {
+        showSuccessMessage("No active interaction to clear");
+    }
+}
+
+/**
+ * Reset form (Enhanced with interaction cleanup)
  */
 function resetForm() {
+    console.log("Form reset - cleaning up interaction state");
+    
+    // End current interaction if active
+    if (interactionState.isActive && interactionState.currentANI) {
+        var integration = new servicecloud.cti.integration();
+        integration.endPreviousInteraction();
+    }
+    
+    // Reset form fields
     document.getElementById("callForm").reset();
     document.getElementById("payloadMessage").innerText = "";
-    console.log("Form reset");
+    
+    // Reset interaction state
+    interactionState.currentANI = null;
+    interactionState.isActive = false;
+    interactionState.lastLookupTime = 0;
+    
+    console.log("Form and interaction state reset");
 }
 
 /**
