@@ -7,7 +7,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
 }
 
 /* Style for the form container */
@@ -26,6 +26,23 @@ h1 {
     font-size: 1.5em;
 }
 
+/* Table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td {
+    padding: 8px;
+    vertical-align: top;
+}
+
+td:first-child {
+    width: 30%;
+    text-align: right;
+    padding-right: 15px;
+}
+
 /* Styling for input labels */
 label {
     font-size: 0.85em;
@@ -42,6 +59,11 @@ input, textarea, select {
     border-radius: 4px;
 }
 
+textarea {
+    height: 60px;
+    resize: vertical;
+}
+
 /* Styling for buttons */
 button {
     padding: 6px 15px;
@@ -51,11 +73,18 @@ button {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    margin: 2px;
 }
 
 /* Hover effect for buttons */
 button:hover {
     background-color: #0056b3;
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+    width: auto;
+    margin-right: 5px;
 }
 
 /* Styling for the payload display section */
@@ -67,4 +96,5 @@ button:hover {
     border-radius: 4px;
     font-size: 0.9em;
     word-wrap: break-word;
+    white-space: pre-wrap;
 }
