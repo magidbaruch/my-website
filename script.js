@@ -49,20 +49,41 @@ function setupPhoneNumberLookup() {
     if (aniField) {
         console.log("Setting up ANI field listener");
         
-        // Listen for phone number changes
+        // Listen for phone number changes with immediate lookup
         aniField.addEventListener('input', function() {
             const phoneNumber = this.value.trim();
+            if (phoneNumber && phoneNumber.length >= 10) {
+                console.log("Phone number entered (10+ digits):", phoneNumber);
+                
+                // Clear any existing timeout
+                if (window.lookupTimeout) {
+                    clearTimeout(window.lookupTimeout);
+                }
+                
+                // Set a short delay to avoid too many lookups while typing
+                window.lookupTimeout = setTimeout(() => {
+                    lookupContactInSAP(phoneNumber);
+                }, 800);
+            }
+        });
+        
+        // Also trigger on blur (when user clicks away)
+        aniField.addEventListener('blur', function() {
+            const phoneNumber = this.value.trim();
             if (phoneNumber && phoneNumber.length >= 7) {
-                console.log("Phone number entered:", phoneNumber);
+                console.log("ANI field blur - triggering lookup:", phoneNumber);
                 lookupContactInSAP(phoneNumber);
             }
         });
         
-        // Also trigger on blur
-        aniField.addEventListener('blur', function() {
-            const phoneNumber = this.value.trim();
-            if (phoneNumber && phoneNumber.length >= 7) {
-                lookupContactInSAP(phoneNumber);
+        // Trigger lookup when Enter key is pressed
+        aniField.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                const phoneNumber = this.value.trim();
+                if (phoneNumber && phoneNumber.length >= 7) {
+                    console.log("Enter key pressed - triggering lookup:", phoneNumber);
+                    lookupContactInSAP(phoneNumber);
+                }
             }
         });
     }
@@ -78,38 +99,38 @@ function lookupContactInSAP(phoneNumber) {
     // Clean phone number (remove spaces, format consistently)
     const cleanPhone = phoneNumber.replace(/\s/g, '');
     
-    // Send multiple lookup message formats to ensure SAP recognizes it
-    const lookupMessages = [
-        // Standard CTI lookup
-        {
-            type: 'CTI_LOOKUP',
-            action: 'SEARCH_CONTACT',
-            ani: cleanPhone,
-            provider: 'ZBM_TEST',
-            timestamp: new Date().toISOString()
+    // SAP Service Cloud v2 expects a specific inbound call notification format
+    const inboundCallMessage = {
+        type: 'CTI_EVENT',
+        action: 'NOTIFY',
+        eventType: 'INBOUND',
+        provider: 'ZBM_TEST',
+        ani: cleanPhone,
+        parameters: {
+            Type: 'CALL',
+            EventType: 'INBOUND',
+            Action: 'NOTIFY',
+            ANI: cleanPhone
         },
-        // SAP Service Cloud specific lookup
-        {
-            type: 'INBOUND_CALL',
-            eventType: 'NOTIFY',
-            ani: cleanPhone,
-            provider: 'ZBM_TEST'
-        },
-        // Customer search by phone
-        {
-            type: 'CUSTOMER_LOOKUP',
-            phoneNumber: cleanPhone,
-            searchType: 'ANI'
-        }
-    ];
+        payload: `<?xml version="1.0" encoding="utf-8"?><payload><Type>CALL</Type><EventType>INBOUND</EventType><Action>NOTIFY</Action><ANI>${cleanPhone}</ANI></payload>`,
+        timestamp: new Date().toISOString(),
+        widgetSource: 'https://magidbaruch.github.io/my-website/'
+    };
     
-    // Send all lookup formats
-    lookupMessages.forEach((message, index) => {
-        setTimeout(() => {
-            sendToParent(message);
-            console.log(`Lookup message ${index + 1} sent:`, message);
-        }, index * 200); // Small delay between messages
-    });
+    console.log("Sending inbound call notification for customer lookup:", inboundCallMessage);
+    sendToParent(inboundCallMessage);
+    
+    // Also send a simplified lookup message as backup
+    setTimeout(() => {
+        const simpleMessage = {
+            type: 'PHONE_EVENT',
+            ani: cleanPhone,
+            eventType: 'INBOUND',
+            provider: 'ZBM_TEST'
+        };
+        console.log("Sending backup lookup message:", simpleMessage);
+        sendToParent(simpleMessage);
+    }, 500);
 }
 
 /**
