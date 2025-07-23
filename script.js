@@ -7,46 +7,44 @@ servicecloud.cti = servicecloud.cti || {};
 servicecloud.cti.integration = function () { };
 
 /**
- * Construct the payload in XML format (Official SAP Method - Adapted for Service Cloud v2)
+ * Construct the payload in JSON format (Modified for JSON instead of XML)
  * @param {Object} parameters - Key-value pairs for the payload
- * @returns {string} payload in xml format
+ * @returns {Object} payload in JSON format
  * @private
  */
-servicecloud.cti.integration.prototype._formXMLPayload = function(parameters){
-    var sPayload = "<?xml version='1.0' encoding='utf-8' ?><payload>";
+servicecloud.cti.integration.prototype._formJSONPayload = function(parameters){
+    var jsonPayload = {};
     for(var key in parameters){
         if(parameters[key] && parameters[key].toString().trim() !== ""){
-            var tag = "<" + key + ">" + parameters[key] + "</" + key + ">";
-            sPayload = sPayload + tag;
+            jsonPayload[key] = parameters[key];
         }
     }
-    sPayload = sPayload + "</payload>";
-    console.log("Official SAP payload constructed:", sPayload);
-    return sPayload;
+    console.log("JSON payload constructed:", jsonPayload);
+    return jsonPayload;
 };
 
 /**
- * Send information to Service Cloud v2 (Adapted from C4C method)
+ * Send information to Service Cloud v2 (JSON Format)
  * @param {Object} parameters - Form parameters
  */
 servicecloud.cti.integration.prototype.sendIncomingCalltoServiceCloud = function (parameters) {
-    console.log("Sending to Service Cloud v2 using official SAP method:", parameters);
-    var payload = this._formXMLPayload(parameters);
+    console.log("Sending to Service Cloud v2 using JSON format:", parameters);
+    var payload = this._formJSONPayload(parameters);
     this._doCall(payload);
 };
 
 /**
- * Post to parent window (Official SAP Method)
- * @param {string} sPayload - XML payload to send
+ * Post to parent window (JSON Format)
+ * @param {Object} jsonPayload - JSON payload to send
  * @private
  */
-servicecloud.cti.integration.prototype._doCall = function (sPayload) {
-    console.log("Official SAP _doCall method - sending to parent:", sPayload);
+servicecloud.cti.integration.prototype._doCall = function (jsonPayload) {
+    console.log("Sending JSON payload to parent:", jsonPayload);
     try {
-        window.parent.postMessage(sPayload, "*");
-        console.log("Message sent successfully via official SAP method");
+        window.parent.postMessage(jsonPayload, "*");
+        console.log("JSON message sent successfully");
     } catch (error) {
-        console.error("Error in official SAP _doCall method:", error);
+        console.error("Error sending JSON payload:", error);
     }
 };
 
@@ -171,13 +169,13 @@ function handleSendCall(event) {
     var integration = new servicecloud.cti.integration();
     integration.sendIncomingCalltoServiceCloud(parameters);
     
-    // Display payload for debugging
-    var payload = integration._formXMLPayload(parameters);
-    displayPayloadMessage(payload);
+    // Display payload for debugging (JSON format)
+    var payload = integration._formJSONPayload(parameters);
+    displayPayloadMessage(JSON.stringify(payload, null, 2));
     
     // Show success message
     setTimeout(() => {
-        showSuccessMessage("Payload sent using official SAP method!");
+        showSuccessMessage("JSON payload sent using official SAP method!");
     }, 500);
 }
 
