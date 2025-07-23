@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Cloud Widget POC</title>
+    <meta name="author" content="Lloyd Goveia">
+    <meta name="description" content="Service Cloud Widget POC created by Lloyd Goveia. Provided AS IS with no support.">
+    <!-- Link to the external CSS file -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Link to the external JavaScript file -->
+    <script defer src="script.js"></script>
+</head>
+<body>
+<!-- Main form for the Service Cloud Widget -->
+<form id="callForm" onsubmit="handleSendCall(event)">
+    <h1>Service Cloud Widget POC</h1>
+    <table>
+        <!-- Dropdown to select interaction type -->
+        <tr>
+            <td><label for="type">Type:</label></td>
+            <td>
+                <select id="type" name="type" required>
+                    <option value="CALL">CALL</option>
+                    <option value="CHAT">CHAT</option>
+                    <option value="MESSAGE">MESSAGE</option>
+                </select>
+            </td>
+        </tr>
+        <!-- Dropdown to select event type -->
+        <tr>
+            <td><label for="eventType">Event Type:</label></td>
+            <td>
+                <select id="eventType" name="eventType" required>
+                    <option value="INBOUND">INBOUND</option>
+                    <option value="OUTBOUND">OUTBOUND</option>
+                    <option value="UPDATEACTIVITY">UPDATEACTIVITY</option>
+                    <option value="TRANSFER">TRANSFER</option>
+                </select>
+            </td>
+        </tr>
+        <!-- Dropdown to select action -->
+        <tr>
+            <td><label for="action">Action:</label></td>
+            <td>
+                <select id="action" name="action" required>
+                    <option value="NOTIFY">NOTIFY</option>
+                    <option value="ACCEPT">ACCEPT</option>
+                    <option value="END">END</option>
+                </select>
+            </td>
+        </tr>
+        <!-- Phone number field -->
+        <tr>
+            <td><label for="ani">ANI (Phone Number):</label></td>
+            <td><input id="ani" name="ani" type="text" placeholder="+1234567890" value="+14165551234"></td>
+        </tr>
+        <!-- Email field -->
+        <tr>
+            <td><label for="email">Email:</label></td>
+            <td><input id="email" name="email" type="email" placeholder="example@test.com"></td>
+        </tr>
+        <!-- Subject field -->
+        <tr>
+            <td><label for="subject">Subject:</label></td>
+            <td><input id="subject" name="subject" type="text" placeholder="Enter subject"></td>
+        </tr>
+        <!-- Text field -->
+        <tr>
+            <td><label for="text">Text:</label></td>
+            <td><textarea id="text" name="text" placeholder="Enter text"></textarea></td>
+        </tr>
+        <!-- External Reference ID field -->
+        <tr>
+            <td><label for="externalReferenceID">External Reference ID:</label></td>
+            <td>
+                <input id="externalReferenceID" name="externalReferenceID" type="text">
+                <button type="button" onclick="generateRandomGUID('externalReferenceID')">Generate Random GUID</button>
+            </td>
+        </tr>
+        <!-- Call recording field -->
+        <tr>
+            <td><label for="recordingId">Call Recording:</label></td>
+            <td><input id="recordingId" name="recordingId" type="text"></td>
+        </tr>
+        <!-- Submit and Reset buttons -->
+        <tr>
+            <td colspan="2">
+                <button type="submit">Post Payload to Parent Window</button>
+                <button type="button" onclick="resetForm()">Reset Form</button>
+            </td>
+        </tr>
+    </table>
+    <!-- Section to display the generated XML payload -->
+    <div class="payload-message" id="payloadMessage"></div>
+</form>
+</body>
+</html>
