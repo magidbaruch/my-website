@@ -70,6 +70,11 @@
             <td><label for="text">Text:</label></td>
             <td><textarea id="text" name="text" placeholder="Enter text"></textarea></td>
         </tr>
+        <!-- NEW: Transcript field (missing from your original code) -->
+        <tr>
+            <td><label for="transcript">Transcript:</label></td>
+            <td><textarea id="transcript" name="transcript" placeholder="Enter chat transcript"></textarea></td>
+        </tr>
         <!-- External Reference ID field -->
         <tr>
             <td><label for="externalReferenceID">External Reference ID:</label></td>
@@ -78,14 +83,42 @@
                 <button type="button" onclick="generateRandomGUID('externalReferenceID')">Generate Random GUID</button>
             </td>
         </tr>
-        <!-- Call recording field -->
+        <!-- Call recording field with checkbox -->
         <tr>
             <td><label for="recordingId">Call Recording:</label></td>
-            <td><input id="recordingId" name="recordingId" type="text"></td>
+            <td>
+                <input id="recordingId" name="recordingId" type="text">
+                <label><input type="checkbox" id="copyToCallRecording"> Copy to Call Recording</label>
+            </td>
+        </tr>
+        <!-- NEW: External Original Reference ID (missing from your original code) -->
+        <tr>
+            <td><label for="externalOriginalReferenceID">External Original Reference ID:</label></td>
+            <td>
+                <input id="externalOriginalReferenceID" name="externalOriginalReferenceID" type="text">
+                <button type="button" onclick="generateRandomGUID('externalOriginalReferenceID')">Generate Random GUID</button>
+            </td>
+        </tr>
+        <!-- NEW: Custom Fields (missing from your original code) -->
+        <tr>
+            <td><label for="customField1">Custom Field 1:</label></td>
+            <td><input id="customField1" name="customField1" type="text"></td>
+        </tr>
+        <tr>
+            <td><label for="customField2">Custom Field 2:</label></td>
+            <td><input id="customField2" name="customField2" type="text"></td>
+        </tr>
+        <tr>
+            <td><label for="customField3">Custom Field 3:</label></td>
+            <td><input id="customField3" name="customField3" type="text"></td>
+        </tr>
+        <tr>
+            <td><label for="customField4">Custom Field 4:</label></td>
+            <td><input id="customField4" name="customField4" type="text"></td>
         </tr>
         <!-- Submit and Reset buttons -->
         <tr>
-            <td colspan="2">
+            <td colspan="2" style="text-align: center; padding-top: 20px;">
                 <button type="submit">Post Payload to Parent Window</button>
                 <button type="button" onclick="resetForm()">Reset Form</button>
             </td>
